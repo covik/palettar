@@ -8,3 +8,5 @@
 .pnp.*
 
 .idea/
+**/dist
+**/tsconfig.tsbuildinfo

@@ -1,0 +1,10 @@
+{
+  "name": "@palettar/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "csstype": "^3.0.0"
+  }
+}
