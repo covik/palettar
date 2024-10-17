@@ -8,3 +8,11 @@ export interface PaletteItem {
 }
 
 export interface Palette extends Record<string, PaletteItem> {}
+
+/**
+ * Function primarily targets JS users.
+ * With modern IDE they can benefit from Intellisense autosuggestions
+ */
+export function createColorPalette(colors: Palette): Palette {
+    return colors;
+}
