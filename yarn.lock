@@ -242,7 +242,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
+"@types/node@npm:*, @types/node@npm:22.7.6":
   version: 22.7.6
   resolution: "@types/node@npm:22.7.6"
   dependencies:
@@ -803,6 +803,7 @@ __metadata:
   dependencies:
     "@commitlint/cli": "npm:19.5.0"
     "@commitlint/config-conventional": "npm:19.5.0"
+    "@types/node": "npm:22.7.6"
     husky: "npm:9.1.6"
     typescript: "npm:5.6.3"
   languageName: unknown
