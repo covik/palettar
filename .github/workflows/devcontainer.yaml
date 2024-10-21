@@ -5,14 +5,14 @@ on:
     branches:
       - main
     paths:
-      - .devcontainer.json
+      - .devcontainer/**
       - Dockerfile
       - .github/workflows/devcontainer.yaml
   push:
     branches:
       - main
     paths:
-      - .devcontainer.json
+      - .devcontainer/**
       - Dockerfile
       - .github/workflows/devcontainer.yaml
 
@@ -79,12 +79,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Alter image of the .devcontainer.json
+      - name: Alter image of the devcontainer.json
+        working-directory: .devcontainer
         run: |
           set -e
           echo $IMAGE_REFERENCE
           jq --version
-          jq --arg image "$IMAGE_REFERENCE" '.image = $image' .devcontainer.json > .devcontainer.tmp.json && mv .devcontainer.tmp.json .devcontainer.json
+          jq --arg image "$IMAGE_REFERENCE" '.image = $image' devcontainer.json > devcontainer.tmp.json && mv devcontainer.tmp.json devcontainer.json
 
       - name: Sanity check
         uses: devcontainers/ci@v0.3
@@ -99,21 +100,20 @@ jobs:
             yarn format # jq alters the format
             ls -lah $HOME
 
-      - name: Upload modified .devcontainer.json
+      - name: Upload modified devcontainer.json
         uses: actions/upload-artifact@v4
         with:
           name: devcontainer
-          path: .devcontainer.json
+          path: .devcontainer/devcontainer.json
           if-no-files-found: error
           compression-level: 0
           overwrite: true
-          include-hidden-files: true
 
       - name: Generate diff
         id: comparison
         run: |
           set -euo pipefail  # Enable strict error handling
-          FILE=".devcontainer.json"
+          FILE=".devcontainer/devcontainer.json"
           DIFF=$(git diff --no-prefix "$FILE")
           echo "changes_exist=$( [ -n "$DIFF" ] && echo true || echo false )" >> $GITHUB_OUTPUT
 
@@ -125,7 +125,7 @@ jobs:
             echo "EOF" >> $GITHUB_OUTPUT
             echo -e "$RICH_DIFF" >> $GITHUB_STEP_SUMMARY
           else
-            MSG="No changes were made to .devcontainer.json"
+            MSG="No changes were made to devcontainer.json"
             echo "$MSG"
             echo -e "$MSG" >> $GITHUB_STEP_SUMMARY
             echo "diff_summary=$MSG" >> $GITHUB_OUTPUT
@@ -145,22 +145,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download modified .devcontainer.json
+      - name: Download modified devcontainer.json
         uses: actions/download-artifact@v4
         with:
           name: devcontainer
-          path: .devcontainer.json
+          path: .devcontainer/devcontainer.json
 
       - name: Upsert PR for main branch
         if: github.ref == 'refs/heads/main'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          title: 'chore(deps): update .devcontainer.json digest'
-          commit-message: 'chore(deps): update .devcontainer.json digest'
+          title: 'chore(deps): update devcontainer.json digest'
+          commit-message: 'chore(deps): update devcontainer.json digest'
           sign-commits: true
           body: |
-            Automated update of **.devcontainer.json**.
+            Automated update of **devcontainer.json**.
 
             ### Changes:
             ${{ needs.validate.outputs.diff_summary }}
@@ -176,6 +176,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ### Automated Update: .devcontainer.json
+            ### Automated Update: devcontainer.json
 
             ${{ needs.validate.outputs.diff_summary }}
