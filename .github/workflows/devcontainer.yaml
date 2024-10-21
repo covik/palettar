@@ -103,7 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: devcontainer
-          path: ./.devcontainer.json
+          path: .devcontainer.json
           if-no-files-found: error
           compression-level: 0
           overwrite: true
