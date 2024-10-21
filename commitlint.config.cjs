@@ -9,10 +9,6 @@ const packageScopes = fs.readdirSync(packagesPath).filter((file) => {
 module.exports = {
   extends: ['@commitlint/config-conventional'],
   rules: {
-    'scope-enum': [
-      2,
-      'always',
-      [...packageScopes, 'deps'],
-    ],
+    'scope-enum': [2, 'always', [...packageScopes, 'deps']],
   },
 };
