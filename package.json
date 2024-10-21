@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "format": "prettier . --write",
+    "format": "prettier . --write --cache --cache-location=.yarn/.prettier-cache",
     "format:check": "prettier . --check",
     "prepare": "husky"
   },
