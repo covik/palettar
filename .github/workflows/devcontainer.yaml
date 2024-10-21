@@ -1,0 +1,180 @@
+name: Devcontainer
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .devcontainer.json
+      - Dockerfile
+      - .github/workflows/devcontainer.yaml
+  push:
+    branches:
+      - main
+    paths:
+      - .devcontainer.json
+      - Dockerfile
+      - .github/workflows/devcontainer.yaml
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/devcontainer:latest@${{ steps.push.outputs.digest }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push container image
+        uses: docker/build-push-action@v6
+        id: push
+        with:
+          context: .
+          file: ./Dockerfile
+          target: dev
+          push: true
+          provenance: false
+          labels: ''
+          tags: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/devcontainer:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/devcontainer:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/devcontainer:buildcache,mode=max
+
+  validate:
+    name: Validate
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    env:
+      IMAGE_REFERENCE: ${{ needs.build.outputs.image_tag }}
+      PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+    outputs:
+      diff_summary: ${{ steps.comparison.outputs.diff_summary }}
+      changes_exist: ${{ steps.comparison.outputs.changes_exist }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Alter image of the .devcontainer.json
+        run: |
+          set -e
+          echo $IMAGE_REFERENCE
+          jq --version
+          jq --arg image "$IMAGE_REFERENCE" '.image = $image' .devcontainer.json > .devcontainer.tmp.json && mv .devcontainer.tmp.json .devcontainer.json
+
+      - name: Sanity check
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            set -e
+            node --version
+            yarn --version
+            whoami
+            pwd
+            ls -lah
+            yarn format # jq alters the format
+            ls -lah $HOME
+
+      - name: Upload modified .devcontainer.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: devcontainer
+          path: ./.devcontainer.json
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+
+      - name: Generate diff
+        id: comparison
+        run: |
+          set -euo pipefail  # Enable strict error handling
+          FILE=".devcontainer.json"
+          DIFF=$(git diff --no-prefix "$FILE")
+          echo "changes_exist=$( [ -n "$DIFF" ] && echo true || echo false )" >> $GITHUB_OUTPUT
+
+          if [ -n "$DIFF" ]; then
+            RICH_DIFF=$(printf '```diff\n%s\n```' "$DIFF")
+            echo "Differences found in $FILE:"
+            echo "diff_summary<<EOF" >> $GITHUB_OUTPUT
+            echo "$RICH_DIFF" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+            echo -e "$RICH_DIFF" >> $GITHUB_STEP_SUMMARY
+          else
+            MSG="No changes were made to .devcontainer.json"
+            echo "$MSG"
+            echo -e "$MSG" >> $GITHUB_STEP_SUMMARY
+            echo "diff_summary=$MSG" >> $GITHUB_OUTPUT
+          fi
+
+  pr:
+    name: Manage PR
+    needs: [validate]
+    if: needs.validate.outputs.changes_exist == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download modified .devcontainer.json
+        uses: actions/download-artifact@v4
+        with:
+          name: devcontainer
+          path: .devcontainer.json
+
+      - name: Upsert PR for main branch
+        if: github.ref == 'refs/heads/main'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'chore(deps): update .devcontainer.json digest'
+          commit-message: 'chore(deps): update .devcontainer.json digest'
+          sign-commits: true
+          body: |
+            Automated update of **.devcontainer.json**.
+
+            ### Changes:
+            ${{ needs.validate.outputs.diff_summary }}
+          base: main
+          branch: github-actions/update-devcontainer-json
+          labels: automation
+          draft: false
+
+      - name: Upsert Pull Request comment
+        if: github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ### Automated Update: .devcontainer.json
+
+            ${{ needs.validate.outputs.diff_summary }}
