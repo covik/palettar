@@ -13,8 +13,8 @@
   },
   "scripts": {
     "build": "tsc -b",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "prepare": "husky"
   },
   "workspaces": [
