@@ -1,8 +1,5 @@
 {
-  "build": {
-    "dockerFile": "./Dockerfile",
-    "target": "dev"
-  },
+  "image": "ghcr.io/covik/palettar/devcontainer:latest@sha256:4627536f47075e7844e87b54bd5a60ba3316816a7451034a262a42d7de2337c5",
   "postCreateCommand": "yarn install --immutable",
   "mounts": [
     "source=jetbrains,target=/home/developer/.cache/JetBrains/RemoteDev/dist,type=volume"
