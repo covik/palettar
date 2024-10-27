@@ -1,6 +1,6 @@
 import * as CSS from 'csstype';
 
-type Color =
+export type Color =
   | CSS.DataType.NamedColor
   | `#${string}`
   | `rgb(${number},${number},${number})`
