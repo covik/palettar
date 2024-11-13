@@ -3,5 +3,10 @@
   "postCreateCommand": "yarn install --immutable",
   "mounts": [
     "source=jetbrains,target=/home/developer/.cache/JetBrains/RemoteDev/dist,type=volume"
-  ]
+  ],
+  "features": {
+    "ghcr.io/devcontainers/features/sshd:1": {
+      "version": "latest"
+    }
+  }
 }
