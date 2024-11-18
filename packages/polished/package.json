@@ -4,7 +4,14 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "vitest"
+  },
   "dependencies": {
+    "@palettar/core": "*",
     "polished": "^4.3.1"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.5"
   }
 }
