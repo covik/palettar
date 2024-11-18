@@ -15,7 +15,8 @@
     "build": "tsc -b",
     "format": "prettier . --write --cache --cache-location=.yarn/.prettier-cache",
     "format:check": "prettier . --check",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "yarn workspaces foreach -A run test --run"
   },
   "workspaces": [
     "packages/*"
