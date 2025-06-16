@@ -10,3 +10,4 @@
 .idea/
 **/dist
 **/tsconfig.tsbuildinfo
+**/.vite
